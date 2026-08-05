@@ -1,0 +1,50 @@
+{
+  "name": "Standard summary",
+  "title": "Project Intake Summary",
+  "sections": [
+    {
+      "type": "heading",
+      "text": "Project"
+    },
+    {
+      "type": "field",
+      "field": "Project Title"
+    },
+    {
+      "type": "field",
+      "field": "Recipient Organization"
+    },
+    {
+      "type": "field",
+      "field": "Project Summary"
+    },
+    {
+      "type": "heading",
+      "text": "Budget"
+    },
+    {
+      "type": "field",
+      "field": "Recipient Total Project Costs ($)"
+    },
+    {
+      "type": "field",
+      "field": "Recommended Funding ($)"
+    },
+    {
+      "type": "field",
+      "field": "CHEESEMAKER Collaborative Value"
+    },
+    {
+      "type": "heading",
+      "text": "People"
+    },
+    {
+      "type": "field",
+      "field": "Project Team"
+    },
+    {
+      "type": "field",
+      "field": "Other Collaborators"
+    }
+  ]
+}

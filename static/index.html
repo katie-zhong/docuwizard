@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document Extractor</title>
+<style>
+/* ------------------------------------------------------------------
+   No web fonts, no CDN, no external requests of any kind: the tool has
+   to work on a machine with no internet. System stacks only.
+   Monospace does the expressive work, because the subject matter IS
+   literal strings - anchors, labels, cell refs.
+   ------------------------------------------------------------------ */
+:root{
+  --paper:#EDF0EF; --surface:#FFFFFF; --ink:#16211F;
+  --muted:#687674; --line:#D3DAD8; --line-soft:#E4E9E8;
+  --accent:#14556B; --accent-soft:#E3EDF1;
+  --flag:#8A5A00; --flag-soft:#FBF1DF; --err:#A32020; --err-soft:#FBEAEA;
+  --ok:#1F6B4E;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* header ---------------------------------------------------------- */
+.top{background:var(--ink);color:#EDF0EF;padding:0 20px;display:flex;
+  align-items:center;gap:16px;height:48px}
+.top .name{font-family:var(--mono);font-size:13px;letter-spacing:0.08em;
+  text-transform:uppercase;font-weight:600}
+.top .local{margin-left:auto;font-family:var(--mono);font-size:11px;
+  color:#9FB0AD;letter-spacing:0.04em}
+.top .local b{color:#7FD4B0;font-weight:600}
+
+/* tabs ------------------------------------------------------------ */
+.tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--line);
+  padding:0 20px}
+.tab{padding:11px 16px;border:0;background:none;cursor:pointer;
+  font-family:var(--mono);font-size:12px;letter-spacing:0.06em;
+  text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* layout ---------------------------------------------------------- */
+.wrap{max-width:1180px;margin:0 auto;padding:20px}
+.panel{background:var(--surface);border:1px solid var(--line);margin-bottom:14px}
+.panel > header{padding:10px 14px;border-bottom:1px solid var(--line-soft);
+  display:flex;align-items:center;gap:10px}
+.panel > header h2{font-size:13px;font-family:var(--mono);letter-spacing:0.06em;
+  text-transform:uppercase;color:var(--muted);font-weight:600}
+.panel .body{padding:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.grow{flex:1 1 200px;min-width:0}
+label.lab{display:block;font-family:var(--mono);font-size:11px;
+  letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);
+  margin-bottom:4px}
+input[type=text],select,textarea{width:100%;padding:6px 8px;
+  border:1px solid var(--line);background:var(--surface);border-radius:0;
+  font-family:var(--mono);font-size:12.5px}
+input[type=text]:focus,select:focus,textarea:focus{outline:2px solid var(--accent);
+  outline-offset:-1px;border-color:var(--accent)}
+.btn{padding:7px 14px;border:1px solid var(--ink);background:var(--ink);
+  color:#fff;cursor:pointer;font-family:var(--mono);font-size:12px;
+  letter-spacing:0.05em;text-transform:uppercase}
+.btn:hover{background:#243330}
+.btn.ghost{background:none;color:var(--ink)}
+.btn.ghost:hover{background:var(--line-soft)}
+.btn.small{padding:4px 9px;font-size:11px}
+.btn.danger{border-color:var(--err);color:var(--err);background:none}
+.btn.danger:hover{background:var(--err-soft)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* drop zone ------------------------------------------------------- */
+.drop{border:1.5px dashed var(--line);padding:26px;text-align:center;
+  background:#F7F9F8;cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{margin:0 0 4px}
+.drop .hint{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+/* file list ------------------------------------------------------- */
+.files{list-style:none;margin:12px 0 0;padding:0}
+.files li{display:flex;align-items:center;gap:10px;padding:7px 0;
+  border-top:1px solid var(--line-soft);font-family:var(--mono);font-size:12.5px}
+.files .ext{background:var(--accent-soft);color:var(--accent);padding:1px 6px;
+  font-size:11px;letter-spacing:.04em}
+.files .bad .ext{background:var(--err-soft);color:var(--err)}
+.files .sz{margin-left:auto;color:var(--muted);font-size:11.5px}
+
+/* checks ---------------------------------------------------------- */
+.checks{display:flex;gap:16px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:6px;font-family:var(--mono);
+  font-size:12.5px;cursor:pointer}
+
+/* SIGNATURE: anchor chips ----------------------------------------
+   Anchors are the load-bearing concept of the whole tool, so they get
+   the one piece of visual personality: a bracketed tape-mark chip that
+   makes the exact captured string unmistakable, whitespace included. */
+.anchor{font-family:var(--mono);font-size:12px;background:#F2F6F7;
+  border-left:2px solid var(--accent);padding:1px 7px;color:var(--accent);
+  white-space:pre;display:inline-block}
+.anchor::before{content:"⟦";opacity:.45;margin-right:3px}
+.anchor::after{content:"⟧";opacity:.45;margin-left:3px}
+
+/* rule rows ------------------------------------------------------- */
+.rule{border:1px solid var(--line);margin-bottom:10px;background:var(--surface)}
+.rule > .head{display:flex;align-items:center;gap:10px;padding:8px 12px;
+  background:#F7F9F8;border-bottom:1px solid var(--line-soft)}
+.rule .idx{font-family:var(--mono);font-size:11px;color:var(--muted);
+  min-width:22px}
+.rule .fname{flex:1 1 200px}
+.rule .params{padding:10px 12px;display:flex;gap:12px;flex-wrap:wrap}
+.rule .params > div{flex:1 1 200px;min-width:160px}
+.type-badge{font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--accent);background:var(--accent-soft);
+  padding:2px 7px}
+
+/* results --------------------------------------------------------- */
+table.res{width:100%;border-collapse:collapse;font-size:13px}
+table.res th{text-align:left;font-family:var(--mono);font-size:11px;
+  text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  padding:6px 8px;border-bottom:1px solid var(--line)}
+table.res td{padding:8px;border-bottom:1px solid var(--line-soft);
+  vertical-align:top}
+table.res tr.miss{background:var(--err-soft)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--ok);margin-right:6px}
+.dot.no{background:var(--err)}
+.cite{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.prev{color:#33403D}
+
+/* callouts -------------------------------------------------------- */
+.callout{border-left:3px solid var(--flag);background:var(--flag-soft);
+  padding:10px 12px;margin-bottom:12px;font-size:13px}
+.callout.err{border-left-color:var(--err);background:var(--err-soft)}
+.callout h3{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;
+  letter-spacing:.05em;margin-bottom:5px}
+.callout ul{margin:4px 0 0;padding-left:18px}
+.log{font-family:var(--mono);font-size:12px;background:#F7F9F8;
+  border:1px solid var(--line-soft);padding:10px;max-height:200px;
+  overflow:auto;white-space:pre-wrap}
+.muted{color:var(--muted)}
+.hidden{display:none}
+.sec-row{display:flex;gap:8px;align-items:center;padding:6px 0;
+  border-top:1px solid var(--line-soft)}
+.sec-row .kind{font-family:var(--mono);font-size:11px;color:var(--muted);
+  min-width:64px;text-transform:uppercase}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="name">Document Extractor</span>
+  <span class="muted" style="font-size:12px">rule-based · no model · no upload</span>
+  <span class="local">runs on <b>this machine only</b> · 127.0.0.1</span>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="extract">Extract</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="rules">Rules</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="template">Output</button>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== EXTRACT ==================== -->
+<section id="tab-extract">
+  <div class="panel">
+    <header><h2>1 · Files</h2><span class="muted" id="supported"></span></header>
+    <div class="body">
+      <div class="drop" id="drop" tabindex="0" role="button">
+        <p><strong>Drop files here</strong> or click to choose</p>
+        <p class="hint" id="drophint">.docx · .xlsx · .pdf · .pptx</p>
+      </div>
+      <input type="file" id="filein" multiple class="hidden">
+      <ul class="files" id="filelist"></ul>
+    </div>
+  </div>
+
+  <div class="panel">
+    <header><h2>2 · Rules and output</h2></header>
+    <div class="body">
+      <div class="row">
+        <div class="grow">
+          <label class="lab" for="rs">Rule set</label>
+          <select id="rs"></select>
+        </div>
+        <div class="grow">
+          <label class="lab" for="tpl">Output template</label>
+          <select id="tpl"></select>
+        </div>
+      </div>
+      <div style="margin-top:12px">
+        <label class="lab">Formats</label>
+        <div class="checks">
+          <label><input type="checkbox" value="docx" checked> Word (.docx)</label>
+          <label><input type="checkbox" value="md" checked> Markdown (.md)</label>
+          <label><input type="checkbox" value="pdf"> PDF</label>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <button class="btn" id="runbtn">Extract</button>
+        <span class="muted" id="runstate" style="margin-left:10px"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="resultpanel">
+    <header><h2>3 · Results</h2>
+      <span id="dl" style="margin-left:auto"></span>
+    </header>
+    <div class="body">
+      <div id="callouts"></div>
+      <table class="res"><thead><tr>
+        <th style="width:22%">Field</th><th style="width:44%">Extracted</th>
+        <th style="width:34%">Source</th></tr></thead>
+        <tbody id="resbody"></tbody></table>
+      <details style="margin-top:12px">
+        <summary class="muted" style="cursor:pointer;font-family:var(--mono);font-size:12px">Run log</summary>
+        <div class="log" id="log"></div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== RULES ==================== -->
+<section id="tab-rules" class="hidden">
+  <div class="panel">
+    <header><h2>Rule set</h2></header>
+    <div class="body">
+      <div class="row">
+        <div class="grow">
+          <label class="lab" for="rs2">Open</label>
+          <select id="rs2"></select>
+        </div>
+        <div class="grow">
+          <label class="lab" for="rsname">Name</label>
+          <input type="text" id="rsname">
+        </div>
+        <button class="btn" id="saverules">Save rule set</button>
+        <button class="btn ghost small" id="newrules">New</button>
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">
+        <strong>Applies to</strong> is part of a file name — a field runs against the
+        uploaded file whose name contains that text. Leave it blank to search every file.
+        Anchor text is matched loosely: capitals, dashes, curly quotes, extra spaces and a
+        trailing <code>*</code> are all forgiven.
+      </p>
+    </div>
+  </div>
+
+  <div id="rulelist"></div>
+  <button class="btn ghost" id="addrule">Add field</button>
+</section>
+
+<!-- ==================== OUTPUT TEMPLATE ==================== -->
+<section id="tab-template" class="hidden">
+  <div class="panel">
+    <header><h2>Output template</h2></header>
+    <div class="body">
+      <div class="row">
+        <div class="grow">
+          <label class="lab" for="tpl2">Open</label>
+          <select id="tpl2"></select>
+        </div>
+        <div class="grow">
+          <label class="lab" for="tplname">Name</label>
+          <input type="text" id="tplname">
+        </div>
+        <div class="grow">
+          <label class="lab" for="tpltitle">Document title</label>
+          <input type="text" id="tpltitle">
+        </div>
+        <button class="btn" id="savetpl">Save template</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <header><h2>Sections, in order</h2></header>
+    <div class="body">
+      <div id="seclist"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost small" id="addheading">Add heading</button>
+        <button class="btn ghost small" id="addfield">Add field</button>
+      </div>
+      <p class="muted" style="margin:10px 0 0;font-size:12.5px">
+        Any field in the rule set that isn't listed here still appears, appended at
+        the end — adding a rule never makes its output vanish.
+      </p>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+// ---------------------------------------------------------------------
+// State. Everything is plain JSON that mirrors what the server stores.
+// ---------------------------------------------------------------------
+let META = {rule_types:[], supported:[], rulesets:[], templates:[]};
+let RULESET = {name:"", fields:[]};
+let TEMPLATE = {name:"", title:"", sections:[]};
+
+const $ = s => document.querySelector(s);
+const el = (t,c,x) => { const n=document.createElement(t); if(c)n.className=c;
+  if(x!==undefined)n.textContent=x; return n; };
+
+// Which params each rule type needs, and how to label them for a human.
+const PARAMS = {
+  between:       [["start","Start anchor"],["end","End anchor"]],
+  right_of:      [["label","Label to find"]],
+  range:         [["start","Start heading"],["end","End heading"]],
+  around_keyword:[["keyword","Keyword"],["before","Paragraphs before"],["after","Paragraphs after"]],
+  table_contains:[["contains","Table contains"]],
+  sheet_cell:    [["sheet","Sheet/tab name"],["cell","Cell (e.g. P10)"]],
+};
+const TYPE_HELP = {
+  between:"Text sitting between two labels",
+  right_of:"The table cell to the right of a label",
+  range:"A whole section between two headings, kept as-is",
+  around_keyword:"The paragraph containing a keyword, plus neighbours",
+  table_contains:"The entire table containing a phrase",
+  sheet_cell:"One exact spreadsheet cell",
+};
+
+// ---------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------
+document.querySelectorAll(".tab").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===b));
+    ["extract","rules","template"].forEach(t=>
+      $("#tab-"+t).classList.toggle("hidden", t!==b.dataset.tab));
+  };
+});
+
+// ---------------------------------------------------------------------
+// Boot
+// ---------------------------------------------------------------------
+async function boot(){
+  META = await (await fetch("/api/meta")).json();
+  $("#supported").textContent = "reads " + META.supported.join(" ");
+  $("#drophint").textContent = META.supported.join(" · ");
+  fillSelects();
+  if(META.rulesets.length) await openRuleset(META.rulesets[0].id);
+  if(META.templates.length) await openTemplate(META.templates[0].id);
+  refreshFiles();
+}
+
+function fillSelects(){
+  const opts = list => list.map(o=>`<option value="${o.id}">${o.name}</option>`).join("");
+  $("#rs").innerHTML = opts(META.rulesets);
+  $("#rs2").innerHTML = opts(META.rulesets);
+  $("#tpl").innerHTML = opts(META.templates);
+  $("#tpl2").innerHTML = opts(META.templates);
+  if(RULESET.name){ $("#rs").value = RULESET.name; $("#rs2").value = RULESET.name; }
+  if(TEMPLATE.name){ $("#tpl").value = TEMPLATE.name; $("#tpl2").value = TEMPLATE.name; }
+}
+
+// ---------------------------------------------------------------------
+// Files
+// ---------------------------------------------------------------------
+const drop = $("#drop"), filein = $("#filein");
+drop.onclick = ()=>filein.click();
+drop.onkeydown = e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();filein.click();} };
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault(); drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault(); drop.classList.remove("over");}));
+drop.addEventListener("drop", e=>{ if(e.dataTransfer.files.length) upload(e.dataTransfer.files); });
+filein.onchange = ()=>{ if(filein.files.length) upload(filein.files); };
+
+async function upload(fileList){
+  const fd = new FormData();
+  [...fileList].forEach(f=>fd.append("files", f));
+  const r = await fetch("/api/upload", {method:"POST", body:fd});
+  const data = await r.json();
+  renderFiles(data.files);
+}
+async function refreshFiles(){
+  const d = await (await fetch("/api/uploaded")).json();
+  renderFiles(d.files.map(f=>({label:f.label, supported:true, ext:"", size:0})));
+}
+function renderFiles(files){
+  const ul = $("#filelist"); ul.innerHTML = "";
+  files.forEach(f=>{
+    const li = el("li", f.supported ? "" : "bad");
+    li.append(el("span","ext", (f.ext||("."+f.label.split(".").pop())).replace(".","")));
+    li.append(el("span","", f.label));
+    if(f.size) li.append(el("span","sz", (f.size/1024).toFixed(0)+" KB"));
+    if(!f.supported) li.append(el("span","sz", "not readable"));
+    ul.append(li);
+  });
+}
+
+// ---------------------------------------------------------------------
+// Rules editor
+// ---------------------------------------------------------------------
+async function openRuleset(id){
+  RULESET = await (await fetch("/api/rulesets/"+encodeURIComponent(id))).json();
+  $("#rsname").value = RULESET.name || "";
+  drawRules();
+  fillSelects();
+}
+$("#rs2").onchange = e=>openRuleset(e.target.value);
+$("#newrules").onclick = ()=>{ RULESET={name:"New rule set", fields:[]};
+  $("#rsname").value = RULESET.name; drawRules(); };
+$("#addrule").onclick = ()=>{ RULESET.fields.push(
+  {name:"New field", type:"between", match:"", params:{}}); drawRules(); };
+
+function drawRules(){
+  const host = $("#rulelist"); host.innerHTML = "";
+  RULESET.fields.forEach((f,i)=>{
+    const box = el("div","rule");
+    const head = el("div","head");
+    head.append(el("span","idx", String(i+1).padStart(2,"0")));
+
+    const nm = el("div","fname");
+    const nmi = el("input"); nmi.type="text"; nmi.value=f.name||"";
+    nmi.oninput = e=>f.name = e.target.value;
+    nm.append(nmi); head.append(nm);
+
+    const ts = el("select");
+    META.rule_types.forEach(t=>{
+      const o = el("option","",t.replace(/_/g," ")); o.value=t;
+      if(t===f.type) o.selected=true; ts.append(o);
+    });
+    ts.onchange = e=>{ f.type = e.target.value; f.params = {}; drawRules(); };
+    ts.style.maxWidth="170px"; head.append(ts);
+
+    const mi = el("input"); mi.type="text"; mi.placeholder="applies to (file name contains)";
+    mi.value = f.match||""; mi.oninput = e=>f.match = e.target.value;
+    mi.style.maxWidth="220px"; head.append(mi);
+
+    const del = el("button","btn danger small","Remove");
+    del.onclick = ()=>{ RULESET.fields.splice(i,1); drawRules(); };
+    head.append(del);
+    box.append(head);
+
+    const params = el("div","params");
+    const help = el("div"); help.style.flex="1 1 100%";
+    help.append(el("span","type-badge", f.type.replace(/_/g," ")));
+    help.append(el("span","muted", "  " + (TYPE_HELP[f.type]||"")));
+    help.style.marginBottom="4px";
+    params.append(help);
+
+    (PARAMS[f.type]||[]).forEach(([key,label])=>{
+      const d = el("div");
+      const l = el("label","lab",label); d.append(l);
+      const inp = el("input"); inp.type="text";
+      inp.value = f.params?.[key] ?? "";
+      inp.oninput = e=>{ f.params = f.params||{}; f.params[key] = e.target.value; };
+      d.append(inp); params.append(d);
+    });
+    const d2 = el("div");
+    d2.append(el("label","lab","Default if not found (optional)"));
+    const di = el("input"); di.type="text"; di.value = f.default||"";
+    di.placeholder="leave blank to flag as missing";
+    di.oninput = e=>{ if(e.target.value) f.default = e.target.value; else delete f.default; };
+    d2.append(di); params.append(d2);
+
+    box.append(params);
+    host.append(box);
+  });
+}
+
+$("#saverules").onclick = async ()=>{
+  RULESET.name = $("#rsname").value.trim() || "Untitled";
+  const r = await fetch("/api/rulesets", {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(RULESET)});
+  const d = await r.json();
+  META.rulesets = d.rulesets; fillSelects();
+  flash($("#saverules"), "Saved");
+};
+
+// ---------------------------------------------------------------------
+// Template editor
+// ---------------------------------------------------------------------
+async function openTemplate(id){
+  TEMPLATE = await (await fetch("/api/templates/"+encodeURIComponent(id))).json();
+  $("#tplname").value = TEMPLATE.name||"";
+  $("#tpltitle").value = TEMPLATE.title||"";
+  drawSections(); fillSelects();
+}
+$("#tpl2").onchange = e=>openTemplate(e.target.value);
+$("#addheading").onclick = ()=>{ TEMPLATE.sections.push({type:"heading",text:"New heading"});
+  drawSections(); };
+$("#addfield").onclick = ()=>{ TEMPLATE.sections.push({type:"field",
+  field: RULESET.fields[0]?.name || ""}); drawSections(); };
+
+function drawSections(){
+  const host = $("#seclist"); host.innerHTML = "";
+  (TEMPLATE.sections||[]).forEach((s,i)=>{
+    const row = el("div","sec-row");
+    row.append(el("span","kind", s.type));
+    if(s.type==="heading"){
+      const inp = el("input"); inp.type="text"; inp.value=s.text||"";
+      inp.oninput = e=>s.text = e.target.value; row.append(inp);
+    } else {
+      const sel = el("select");
+      const names = RULESET.fields.map(f=>f.name);
+      if(s.field && !names.includes(s.field)) names.unshift(s.field);
+      names.forEach(n=>{ const o=el("option","",n); o.value=n;
+        if(n===s.field) o.selected=true; sel.append(o); });
+      sel.onchange = e=>s.field = e.target.value;
+      row.append(sel);
+    }
+    const up = el("button","btn ghost small","↑");
+    up.onclick=()=>{ if(i>0){ const t=TEMPLATE.sections[i-1];
+      TEMPLATE.sections[i-1]=s; TEMPLATE.sections[i]=t; drawSections(); } };
+    const dn = el("button","btn ghost small","↓");
+    dn.onclick=()=>{ if(i<TEMPLATE.sections.length-1){ const t=TEMPLATE.sections[i+1];
+      TEMPLATE.sections[i+1]=s; TEMPLATE.sections[i]=t; drawSections(); } };
+    const rm = el("button","btn danger small","Remove");
+    rm.onclick=()=>{ TEMPLATE.sections.splice(i,1); drawSections(); };
+    row.append(up,dn,rm);
+    host.append(row);
+  });
+}
+
+$("#savetpl").onclick = async ()=>{
+  TEMPLATE.name = $("#tplname").value.trim() || "Untitled";
+  TEMPLATE.title = $("#tpltitle").value.trim() || TEMPLATE.name;
+  const r = await fetch("/api/templates", {method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(TEMPLATE)});
+  const d = await r.json();
+  META.templates = d.templates; fillSelects();
+  flash($("#savetpl"), "Saved");
+};
+
+function flash(btn, word){
+  const old = btn.textContent; btn.textContent = word;
+  setTimeout(()=>btn.textContent = old, 1200);
+}
+
+// ---------------------------------------------------------------------
+// Run
+// ---------------------------------------------------------------------
+$("#runbtn").onclick = async ()=>{
+  const formats = [...document.querySelectorAll(".checks input:checked")]
+    .map(c=>c.value);
+  if(!formats.length){ setState("Choose at least one output format."); return; }
+  $("#runbtn").disabled = true; setState("Working…");
+  try{
+    const r = await fetch("/api/run", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ruleset:$("#rs").value, template:$("#tpl").value,
+                            formats})});
+    if(!r.ok){ const e = await r.json();
+      setState(e.detail || "That didn't work."); return; }
+    renderResult(await r.json());
+    setState("");
+  } catch(err){ setState("That didn't work: " + err.message); }
+  finally{ $("#runbtn").disabled = false; }
+};
+function setState(t){ $("#runstate").textContent = t; }
+
+function renderResult(d){
+  $("#resultpanel").classList.remove("hidden");
+  $("#log").textContent = d.log.join("\n");
+
+  const co = $("#callouts"); co.innerHTML = "";
+  if(d.missing.length){
+    const c = el("div","callout err");
+    c.append(el("h3","","Check these by hand"));
+    const ul = el("ul");
+    d.missing.forEach(m=>ul.append(el("li","",m + " — not found in the files")));
+    c.append(ul); co.append(c);
+  }
+  if(d.warnings.length){
+    const c = el("div","callout");
+    c.append(el("h3","","File warnings"));
+    const ul = el("ul"); d.warnings.forEach(w=>ul.append(el("li","",w)));
+    c.append(ul); co.append(c);
+  }
+
+  const tb = $("#resbody"); tb.innerHTML = "";
+  d.fields.forEach(f=>{
+    const tr = el("tr", f.found ? "" : "miss");
+    const td1 = el("td");
+    td1.append(el("span", "dot" + (f.found?"":" no")));
+    td1.append(el("span","", f.name));
+    tr.append(td1);
+    const td2 = el("td","prev");
+    td2.textContent = f.found ? f.preview : (f.note || "Not found");
+    tr.append(td2);
+    tr.append(el("td","cite", f.citation));
+    tb.append(tr);
+  });
+
+  const dl = $("#dl"); dl.innerHTML = "";
+  d.outputs.forEach(o=>{
+    const a = el("a","btn small", "Download ." + o.format);
+    a.href = "/api/download/" + o.format; a.style.marginLeft="6px";
+    a.style.textDecoration="none"; dl.append(a);
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
