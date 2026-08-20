@@ -66,6 +66,14 @@ For Word:
 For Excel:
 <img width="668" height="398" alt="{DA9DD3E1-D5BA-4D22-AA67-733D859F85EC}" src="https://github.com/user-attachments/assets/fa86de53-cd9d-4921-837a-8fffbbd60f11" />
 
+Take a tour of the features.
+<img width="710" height="333" alt="{DE5F7040-EEBF-4143-AC07-EC7E36213CD2}" src="https://github.com/user-attachments/assets/ab5411c3-134c-43fa-83ff-b8ab9a251599" />
+
+Export to a fully customizable output format.
+<img width="606" height="438" alt="{4F55864C-7243-4E80-A647-90909E489436}" src="https://github.com/user-attachments/assets/862e4833-1139-492b-b323-bb27f4276e8d" />
+
+Output example.
+<img width="305" height="397" alt="{A6FE2EB3-D271-4C41-8460-A44FB47B05FC}" src="https://github.com/user-attachments/assets/c4130da6-a253-4bb8-8334-4266550bbfac" />
 
 The intended order is **build a ruleset → build an output template → add files
 → extract**. Every picker includes a **+ Create new…** option that jumps
