@@ -53,6 +53,12 @@ tends to treat large self-extracting executables with suspicion.
 
 ## Using it
 
+<img width="1347" height="701" alt="image" src="https://github.com/user-attachments/assets/609ae6e4-07c4-4ec0-bf7a-0459f1d6a375" />
+<img width="1344" height="419" alt="image" src="https://github.com/user-attachments/assets/a7d64638-856e-4e3a-b45f-3752cff94be5" />
+
+
+<img width="675" height="454" alt="{A33E9144-D02D-4C14-900F-1727D5A551F0}" src="https://github.com/user-attachments/assets/604326b6-0865-4e81-b880-b5919923570a" />
+
 The intended order is **build a ruleset → build an output template → add files
 → extract**. Every picker includes a **+ Create new…** option that jumps
 straight to the editor, so the flow is visible from the landing page. A **?**
