@@ -59,6 +59,14 @@ tends to treat large self-extracting executables with suspicion.
 
 <img width="675" height="454" alt="{A33E9144-D02D-4C14-900F-1727D5A551F0}" src="https://github.com/user-attachments/assets/604326b6-0865-4e81-b880-b5919923570a" />
 
+Select extraction anchors from a file preview.
+For Word:
+<img width="315" height="391" alt="{DACB3136-D5BE-4377-B404-76AFED18BF51}" src="https://github.com/user-attachments/assets/04811d0d-14f9-4a8b-a7df-99dcb7ab90ca" />
+
+For Excel:
+<img width="668" height="398" alt="{DA9DD3E1-D5BA-4D22-AA67-733D859F85EC}" src="https://github.com/user-attachments/assets/fa86de53-cd9d-4921-837a-8fffbbd60f11" />
+
+
 The intended order is **build a ruleset → build an output template → add files
 → extract**. Every picker includes a **+ Create new…** option that jumps
 straight to the editor, so the flow is visible from the landing page. A **?**
