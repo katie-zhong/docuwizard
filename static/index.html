@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocuWizard</title>
+<style>
+/* TT Norms Pro / TT Wellingtons are commercial and cannot be bundled or fetched
+   (the tool must work offline). Requested first so they are used if installed;
+   a humanist/geometric system stack sits behind them. */
+:root{
+  --sans:"TT Norms Pro","TT Wellingtons","Segoe UI Variable Text","Segoe UI",
+         Avenir,"Avenir Next",Corbel,Optima,ui-sans-serif,system-ui,sans-serif;
+  --display:"TT Wellingtons","TT Norms Pro","Segoe UI Variable Display",
+         Avenir,"Avenir Next",Corbel,Optima,ui-sans-serif,system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  --paper:#EEF1F0; --surface:#FFFFFF; --ink:#16211F; --muted:#687674;
+  --line:#D3DAD8; --soft:#E7EBEA;
+  --accent:#14556B; --accent-soft:#E3EDF1;
+  --warn:#8A5A00; --warn-soft:#FBF1DF; --err:#A32020; --err-soft:#FBEAEA;
+  --ok:#1F6B4E;
+  --a1:#FFE08A; --a1d:#7A5C00; --a2:#B6E3F5; --a2d:#0F4557;
+  --a3:#D9C9F0; --a3d:#4B2E73;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-family:var(--display);font-weight:600;letter-spacing:-0.015em}
+
+.top{background:var(--ink);color:#EDF0EF;padding:0 22px;display:flex;
+  align-items:center;gap:14px;height:52px}
+.top .name{font-family:var(--display);font-size:16px;font-weight:600}
+.top .sub{font-size:12.5px;color:#9FB0AD}
+.top .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.tourbtn{border:1px solid #4A5A57;background:none;color:#CFDAD8;cursor:pointer;
+  font-size:12.5px;padding:5px 11px;border-radius:3px}
+.tourbtn:hover{background:#26332F;color:#fff}
+
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--line);
+  padding:0 22px}
+.tab{padding:12px 18px;border:0;background:none;cursor:pointer;font-size:14px;
+  font-weight:500;color:var(--muted);border-bottom:2px solid transparent}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent);
+  font-weight:600}
+
+.wrap{max-width:1280px;margin:0 auto;padding:22px}
+.wrap.wide{max-width:1640px}
+.sectitle{font-family:var(--display);font-size:20px;font-weight:600;margin:0 0 2px}
+.sectitle .n{color:var(--accent);margin-right:8px}
+.secsub{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+.panel{background:var(--surface);border:1px solid var(--line);
+  margin-bottom:20px;padding:18px}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.grow{flex:1 1 220px;min-width:0}
+label.lab{display:block;font-size:12.5px;font-weight:600;color:var(--muted);
+  margin-bottom:5px}
+input[type=text],select,textarea{width:100%;padding:8px 10px;
+  border:1px solid var(--line);background:var(--surface);border-radius:3px;
+  font-size:14px}
+input.mono{font-family:var(--mono);font-size:12.5px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);
+  outline-offset:-1px;border-color:var(--accent)}
+.btn{padding:9px 16px;border:1px solid var(--ink);background:var(--ink);
+  color:#fff;cursor:pointer;border-radius:3px;font-size:13.5px;font-weight:500}
+.btn:hover{background:#26332F}
+.btn.ghost{background:none;color:var(--ink)}
+.btn.ghost:hover{background:var(--soft)}
+.btn.small{padding:5px 10px;font-size:12.5px}
+.btn.danger{border-color:var(--err);color:var(--err);background:none}
+.btn.danger:hover{background:var(--err-soft)}
+.btn.accent{background:var(--accent);border-color:var(--accent)}
+.btn.accent:hover{background:#0F4557}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.iconbtn{border:1px solid var(--line);background:none;color:var(--muted);
+  cursor:pointer;border-radius:3px;padding:5px 9px;font-size:13px}
+.iconbtn:hover{border-color:var(--err);color:var(--err);background:var(--err-soft)}
+
+.drop{border:1.5px dashed var(--line);padding:26px;text-align:center;
+  background:#F8FAF9;cursor:pointer;border-radius:4px}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop .hint{font-size:12.5px;color:var(--muted);margin-top:4px}
+.files{list-style:none;margin:14px 0 0;padding:0}
+.files li{display:flex;align-items:center;gap:11px;padding:8px 0;
+  border-top:1px solid var(--soft);font-size:13.5px}
+.files .ext{background:var(--accent-soft);color:var(--accent);padding:2px 7px;
+  font-family:var(--mono);font-size:11px;border-radius:2px}
+.files .bad .ext{background:var(--err-soft);color:var(--err)}
+.files .sz{margin-left:auto;color:var(--muted);font-size:12.5px}
+select[multiple]{width:100%;padding:4px;font-size:13.5px;border:1px solid var(--line);
+  border-radius:3px;background:var(--surface)}
+select[multiple] option{padding:5px 7px;border-radius:2px}
+select[multiple] option:checked{background:var(--accent-soft);color:var(--accent);
+  font-weight:600}
+.libhint{font-size:12.5px;margin-top:6px}
+.checks{display:flex;gap:18px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:7px;font-size:13.5px;cursor:pointer}
+
+/* progress -------------------------------------------------------- */
+.progwrap{margin-top:14px}
+.progbar{height:6px;background:var(--soft);border-radius:3px;overflow:hidden}
+.progfill{height:100%;background:var(--accent);width:0;transition:width .25s ease}
+.proglog{font-family:var(--mono);font-size:12px;color:var(--muted);
+  margin-top:7px;height:18px;overflow:hidden;white-space:nowrap;
+  text-overflow:ellipsis}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+@media(max-width:1180px){.split{grid-template-columns:1fr}}
+
+/* combobox: dropdown + editable name in one control ---------------- */
+.combo{position:relative;display:flex;border:1px solid var(--line);
+  border-radius:3px;background:var(--surface)}
+.combo:focus-within{outline:2px solid var(--accent);outline-offset:-1px;
+  border-color:var(--accent)}
+.combo input{border:0!important;outline:none!important;flex:1;min-width:0;
+  background:none}
+.combo .caret{border:0;background:none;cursor:pointer;color:var(--muted);
+  padding:0 10px;font-size:11px}
+.combo .caret:hover{color:var(--ink)}
+.combolist{position:absolute;top:calc(100% + 2px);left:0;right:0;z-index:30;
+  background:#fff;border:1px solid var(--line);border-radius:3px;
+  box-shadow:0 6px 18px rgba(0,0,0,.12);max-height:240px;overflow:auto}
+.combolist div{padding:7px 10px;cursor:pointer;font-size:13.5px;display:flex;
+  align-items:center;gap:8px}
+.combolist div:hover{background:var(--accent-soft)}
+.combolist div.new{border-top:1px solid var(--soft);color:var(--accent);
+  font-weight:600}
+.combolist .del{margin-left:auto;color:var(--muted);font-size:12px}
+.combolist .del:hover{color:var(--err)}
+/* file-type suffix pinned right inside the title box */
+.suffixwrap{position:relative}
+.suffixwrap input{padding-right:74px}
+.suffixwrap .sfx{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:12.5px;pointer-events:none;background:#fff;
+  padding-left:8px}
+
+.rule{border:1px solid var(--line);border-radius:4px;margin-bottom:12px;
+  background:var(--surface)}
+.rule .head{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:#F8FAF9;border-bottom:1px solid var(--soft)}
+.rule .idx{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.rule .step{padding:10px 12px;border-top:1px solid var(--soft)}
+.rule .step.dim{opacity:.4;pointer-events:none}
+.steplab{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;
+  display:flex;align-items:center;gap:6px}
+.stepnum{width:17px;height:17px;border-radius:50%;background:var(--accent-soft);
+  color:var(--accent);font-size:10.5px;display:grid;place-items:center;font-weight:700}
+.rulehelp{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.45}
+.pgrid{display:flex;gap:10px;flex-wrap:wrap}
+.pgrid > div{flex:1 1 170px;min-width:150px}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:2px;
+  margin-right:5px;vertical-align:middle}
+
+.prevwrap{border:1px solid var(--line);border-radius:4px;margin-top:12px;
+  background:#FCFDFD}
+.prevhead{display:flex;align-items:center;gap:8px;padding:8px 11px;
+  cursor:pointer;user-select:none;font-size:13px;font-weight:600}
+.prevhead .arrow{transition:transform .15s;color:var(--muted)}
+.prevwrap.closed .arrow{transform:rotate(-90deg)}
+.prevwrap.closed .prevbody{display:none}
+.prevbody{padding:11px;border-top:1px solid var(--soft)}
+.docprev{border:1px solid var(--line);padding:14px;background:#fff;
+  font-size:13px;height:300px;overflow:auto;user-select:text}
+.docprev p{margin:0 0 7px;border-radius:2px}
+.docprev p.h{font-family:var(--display);font-weight:600;font-size:15px;margin-top:12px}
+/* whole-header click target: hovering a heading highlights all of it, so it can
+   be picked in one click instead of dragging across the text */
+.docprev p.h.pickable:hover{background:var(--a2);cursor:pointer;
+  box-shadow:0 0 0 3px var(--a2)}
+.docprev table{border-collapse:collapse;margin:7px 0;width:100%}
+.docprev td{border:1px solid var(--line);padding:3px 6px;font-size:12px}
+.docprev ::selection{background:#BFE0EC}
+/* right_of works only inside tables, so everything else is dimmed out */
+.docprev.tablesonly p{opacity:.32}
+.docprev.tablesonly td:hover{background:var(--a1)}
+mark.a1{background:var(--a1);color:var(--a1d);padding:0 2px;border-radius:2px}
+mark.a2{background:var(--a2);color:var(--a2d);padding:0 2px;border-radius:2px}
+mark.a3{background:var(--a3);color:var(--a3d);padding:0 2px;border-radius:2px}
+.pickbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px}
+.selshow{font-family:var(--mono);font-size:11.5px;background:#F2F6F7;
+  border-left:2px solid var(--accent);padding:3px 8px;color:var(--accent);
+  max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.setbtn.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.warnline{font-size:12.5px;color:var(--warn);margin-top:7px}
+
+.gridwrap{height:300px;overflow:auto;border:1px solid var(--line);background:#fff}
+.grid{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;
+  user-select:none}
+.grid td,.grid th{border:1px solid var(--line);padding:3px 6px;min-width:56px;
+  max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:cell}
+.grid th{background:#F0F3F2;color:var(--muted);position:sticky;top:0;z-index:2}
+.grid td:hover{background:var(--accent-soft)}
+.grid td.inrange{background:var(--a2);color:var(--a2d)}
+.grid td.anchorcell{outline:2px solid var(--a2d);outline-offset:-2px;font-weight:700}
+.sheettabs{display:flex;gap:3px;flex-wrap:wrap;border-top:1px solid var(--line);
+  padding-top:6px}
+.sheettab{padding:4px 12px;border:1px solid var(--line);border-top:0;
+  background:#F0F3F2;cursor:pointer;font-size:12px;border-radius:0 0 3px 3px}
+.sheettab.on{background:#fff;color:var(--accent);font-weight:600;
+  border-color:var(--accent)}
+
+.sec{display:flex;align-items:center;gap:10px;padding:7px 10px;
+  border:1px solid transparent;border-radius:3px;background:var(--surface)}
+.sec:hover{border-color:var(--soft);background:#FAFCFB}
+.sec.dragging{opacity:.4}
+.sec.over{border-top:2px solid var(--accent)}
+.grip{cursor:grab;color:#AAB6B4;user-select:none;font-size:13px}
+.sec input.h{font-family:var(--display);font-size:17px;font-weight:600;
+  border:0;border-bottom:1px dashed var(--soft);border-radius:0;padding:3px 2px;
+  background:none;flex:1}
+.sec input.h:focus{border-bottom-color:var(--accent);outline:none}
+.sec .fieldpill{flex:1;display:flex;gap:8px;padding-left:14px;
+  border-left:2px solid var(--accent-soft)}
+.sec select{max-width:300px}
+.sec .rm{margin-left:auto}
+
+table.res{width:100%;border-collapse:collapse;font-size:13.5px}
+table.res th{text-align:left;font-size:12px;font-weight:600;color:var(--muted);
+  padding:7px 8px;border-bottom:1px solid var(--line)}
+table.res td{padding:9px 8px;border-bottom:1px solid var(--soft);vertical-align:top}
+table.res tr.miss{background:var(--err-soft)}
+.dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+  background:var(--ok);margin-right:7px}
+.dot.no{background:var(--err)}
+.cite{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.callout{border-left:3px solid var(--warn);background:var(--warn-soft);
+  padding:11px 13px;margin-bottom:13px;font-size:13.5px}
+.callout.err{border-left-color:var(--err);background:var(--err-soft)}
+.callout h3{font-size:13px;margin-bottom:5px}
+.callout ul{margin:4px 0 0;padding-left:18px}
+.log{font-family:var(--mono);font-size:12px;background:#F8FAF9;
+  border:1px solid var(--soft);padding:10px;max-height:210px;overflow:auto;
+  white-space:pre-wrap}
+.muted{color:var(--muted)}
+.hidden{display:none!important}
+
+#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;
+  gap:8px;z-index:90}
+.toast{background:var(--ink);color:#fff;padding:10px 14px;border-radius:4px;
+  font-size:13.5px;box-shadow:0 4px 14px rgba(0,0,0,.18);max-width:340px;
+  border-left:3px solid var(--ok);transition:opacity .3s}
+.toast.err{border-left-color:#FF8A8A}
+
+.confirm{position:fixed;inset:0;background:rgba(12,20,18,.5);display:grid;
+  place-items:center;z-index:95}
+.confirm .box{background:#fff;border-radius:5px;padding:20px;width:min(400px,92vw)}
+.confirm h3{font-size:16px;margin-bottom:8px}
+.confirm p{font-size:13.5px;margin:0 0 16px}
+.confirm .f{display:flex;gap:8px;justify-content:flex-end}
+
+#tourveil{position:absolute;inset:0;z-index:80;pointer-events:none}
+#tourhole{position:absolute;border-radius:5px;
+  box-shadow:0 0 0 9999px rgba(10,18,16,.62);transition:all .18s ease;
+  border:2px solid var(--accent)}
+#tourbox{position:fixed;z-index:81;background:#fff;border-radius:5px;
+  width:320px;padding:15px 16px;box-shadow:0 8px 26px rgba(0,0,0,.24);
+  pointer-events:auto}
+#tourbox h3{font-size:15.5px;margin-bottom:5px}
+#tourbox p{font-size:13.5px;margin:0 0 12px;color:#33403D}
+#tourbox .tf{display:flex;align-items:center;gap:8px}
+#tourbox .step{font-size:12px;color:var(--muted);margin-right:auto}
+
+.help h2{font-size:18px;margin:20px 0 6px}
+.help h2:first-child{margin-top:0}
+.help table{width:100%;border-collapse:collapse;margin:8px 0 14px}
+.help td,.help th{border-bottom:1px solid var(--soft);padding:7px 8px;
+  text-align:left;font-size:13.5px;vertical-align:top}
+.help th{color:var(--muted);font-size:12.5px}
+.help code{font-family:var(--mono);font-size:12.5px;background:#F0F3F2;
+  padding:1px 5px;border-radius:2px}
+.flow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}
+.flow .s{flex:1 1 190px;border:1px solid var(--line);border-radius:4px;
+  padding:11px 13px;background:#F8FAF9}
+.flow .s b{display:block;font-family:var(--display);font-size:14.5px}
+.flow .s span{font-size:12.5px;color:var(--muted)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <span class="name">DocuWizard</span>
+  <span class="sub">Rule-based and on-device document extraction</span>
+  <span class="right">
+    <button class="tourbtn" id="tourbtn">Take the tour</button>
+  </span>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="extract">Extract</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="editor">Rules &amp; Output</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="help">How to Use</button>
+</div>
+
+<div class="wrap" id="wrap">
+
+<!-- ==================== EXTRACT ==================== -->
+<section id="tab-extract">
+  <div class="panel" id="p-files">
+    <h2 class="sectitle"><span class="n">1</span>Input Files</h2>
+    <div class="drop" id="drop" tabindex="0" role="button">
+      <strong>Drop files here</strong> or click to choose
+      <div class="hint" id="drophint"></div>
+    </div>
+    <input type="file" id="filein" multiple class="hidden">
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost small" id="samplebtn">Use sample files</button>
+      <button class="btn ghost small" id="clearbtn">Clear all files</button>
+    </div>
+
+    <div style="margin-top:16px">
+      <label class="lab" for="filelib">Previously uploaded files (saved locally)</label>
+      <select id="filelib" multiple size="7"></select>
+      <div class="libhint muted">
+        Click to select one. Click and drag, or hold Ctrl/Shift, to select several.
+        Only the highlighted files are used when you extract.
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost small" id="selall">Select all</button>
+        <button class="btn ghost small" id="delfile">Remove selected</button>
+        <span class="muted" id="selcount"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="p-choose">
+    <h2 class="sectitle"><span class="n">2</span>Rules &amp; Output</h2>
+    <p class="secsub">Choose what to extract and how it's laid out.</p>
+    <div class="row">
+      <div class="grow">
+        <label class="lab" for="rs">Ruleset template — what to extract</label>
+        <select id="rs"></select>
+      </div>
+      <div class="grow">
+        <label class="lab" for="tpl">Output template — how it's laid out</label>
+        <select id="tpl"></select>
+      </div>
+      <button class="btn ghost" id="toeditor">Edit these</button>
+    </div>
+  </div>
+
+  <div class="panel" id="p-run">
+    <h2 class="sectitle"><span class="n">3</span>Extract</h2>
+    <label class="lab">Choose your output file type</label>
+    <div class="checks" id="formats">
+      <label><input type="checkbox" value="docx" checked> Word (.docx)</label>
+      <label><input type="checkbox" value="pdf" checked> PDF</label>
+      <label><input type="checkbox" value="md"> Markdown (.md)</label>
+      <label><input type="checkbox" value="json"> JSON</label>
+    </div>
+    <div style="margin-top:16px">
+      <button class="btn accent" id="runbtn">Extract</button>
+      <span class="muted" id="runstate" style="margin-left:12px"></span>
+    </div>
+    <div class="progwrap hidden" id="progwrap">
+      <div class="progbar"><div class="progfill" id="progfill"></div></div>
+      <div class="proglog" id="proglog"></div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="resultpanel">
+    <div style="display:flex;align-items:flex-start">
+      <div><h2 class="sectitle"><span class="n">4</span>Results</h2></div>
+      <span id="dl" style="margin-left:auto"></span>
+    </div>
+    <div id="callouts"></div>
+    <table class="res"><thead><tr>
+      <th style="width:22%">Field</th><th style="width:44%">Extracted</th>
+      <th style="width:34%">Source</th></tr></thead>
+      <tbody id="resbody"></tbody></table>
+    <details style="margin-top:12px">
+      <summary class="muted" style="cursor:pointer;font-size:13px">Run log</summary>
+      <div class="log" id="log"></div>
+    </details>
+  </div>
+</section>
+
+<!-- ==================== EDITOR ==================== -->
+<section id="tab-editor" class="hidden">
+  <div class="split">
+    <div class="col">
+      <div class="panel" id="p-rsmeta">
+        <h2 class="sectitle">Ruleset template</h2>
+        <p class="secsub">What to pull out of each file.</p>
+        <label class="lab" for="rsname">Ruleset template</label>
+        <div class="combo" id="rscombo">
+          <input type="text" id="rsname" placeholder="Name this ruleset">
+          <button class="caret" id="rscaret" aria-label="Choose a ruleset">▼</button>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn small" id="saverules">Save</button>
+          <button class="btn ghost small" id="dlrules">Download</button>
+          <button class="btn ghost small" id="uprules">Import</button>
+          <input type="file" id="rsfile" accept=".json" class="hidden">
+        </div>
+      </div>
+      <div id="rulelist"></div>
+      <button class="btn ghost" id="addrule">+ Add field</button>
+    </div>
+
+    <div class="col">
+      <div class="panel" id="p-tplmeta">
+        <h2 class="sectitle">Output template</h2>
+        <p class="secsub">How the summary document is laid out.</p>
+        <label class="lab" for="tplname">Output template</label>
+        <div class="combo" id="tplcombo">
+          <input type="text" id="tplname" placeholder="Name this template">
+          <button class="caret" id="tplcaret" aria-label="Choose a template">▼</button>
+        </div>
+        <div style="margin-top:12px">
+          <label class="lab" for="tpltitle">Output file title</label>
+          <div class="suffixwrap">
+            <input type="text" id="tpltitle">
+            <span class="sfx" id="tplsfx">.docx</span>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn small" id="savetpl">Save</button>
+          <button class="btn ghost small" id="dltpl">Download</button>
+          <button class="btn ghost small" id="uptpl">Import</button>
+          <input type="file" id="tplfile" accept=".json" class="hidden">
+        </div>
+      </div>
+
+      <div class="panel" id="p-sections">
+        <h2 class="sectitle" style="font-size:17px">Output sections</h2>
+        <p class="secsub">Drag to reorder. This mirrors the finished document.</p>
+        <div id="seclist"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn ghost small" id="addheading">+ Heading</button>
+          <button class="btn ghost small" id="addfield">+ Field</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== HELP ==================== -->
+<section id="tab-help" class="hidden">
+  <div class="panel help">
+    <h2>How this works</h2>
+    <p>This tool finds specific pieces of text in your documents and assembles
+       them into one summary, noting where each piece came from. It follows fixed
+       rules you define — no AI, no internet, and no file leaves this computer.</p>
+    <p><button class="btn small" id="tourbtn2">Take the guided tour</button></p>
+
+    <div class="flow">
+      <div class="s"><b>1 · Ruleset</b><span>Say what to extract and where to find it.</span></div>
+      <div class="s"><b>2 · Output template</b><span>Say how the summary is laid out.</span></div>
+      <div class="s"><b>3 · Add files</b><span>Drop in the documents, or load the samples.</span></div>
+      <div class="s"><b>4 · Extract</b><span>Review, and the files download themselves.</span></div>
+    </div>
+
+    <h2>Extraction methods by file type</h2>
+    <table>
+      <tr><th>Method</th><th>What it finds</th><th>Available for</th></tr>
+      <tr><td><b>Between</b></td>
+          <td>Everything between two anchors. Returns plain text if both anchors sit on the same line, or the whole span including tables if they're further apart.</td>
+          <td>Word, PDF, PowerPoint</td></tr>
+      <tr><td><b>Right of (table cell)</b></td>
+          <td>The table cell immediately right of a label cell. Works inside tables only.</td>
+          <td>Word, PDF, PowerPoint</td></tr>
+      <tr><td><b>Around keywords</b></td>
+          <td>The paragraph or table containing a word or phrase. If the keyword is inside a table, the whole table is returned; if in a paragraph, that paragraph plus any neighbouring paragraphs you ask for.</td>
+          <td>All formats</td></tr>
+      <tr><td><b>Table contains</b></td>
+          <td>The entire table containing a phrase.</td>
+          <td>Excel only</td></tr>
+      <tr><td><b>Sheet cell</b></td>
+          <td>One spreadsheet cell, or a range of cells selected by dragging.</td>
+          <td>Excel only</td></tr>
+    </table>
+    <p>Only the methods that can work on the chosen file are offered.</p>
+
+    <h2>Picking anchors</h2>
+    <p>Once you choose a file, a preview appears inside the field. Select text in
+       it and click <b>Set as start anchor</b> (or end, label, keyword). Clicking
+       the same button again unsets it. Chosen anchors stay highlighted in the
+       preview in matching colours.</p>
+    <p>Headings light up when you hover them — click once to take the whole
+       heading, or drag across the text to take part of it.</p>
+    <p>For spreadsheets, click a cell, or click and drag to select a rectangular
+       range.</p>
+    <p>Anchor text is matched loosely: capitals, dashes, curly quotes, extra
+       spaces and a trailing <code>*</code> are forgiven.</p>
+
+    <h2>Where your files are kept</h2>
+    <p>Everything stays on this computer, in the <code>workspace</code> folder
+       next to the program: uploaded files, saved rulesets and output templates,
+       and every past run. Nothing is sent anywhere.</p>
+    <p>Uploaded files build up a local library, so documents you added before are
+       still there next time. Pick which ones a run should use from
+       <b>Previously uploaded files</b>. <b>Remove selected</b> deletes
+       individual files; <b>Clear all files</b> empties the library.</p>
+
+    <h2>Which files work best</h2>
+    <table>
+      <tr><th>Format</th><th>Notes</th></tr>
+      <tr><td>Word <code>.docx</code></td><td>Best — real table structure, so cell rules are exact.</td></tr>
+      <tr><td>Excel <code>.xlsx</code></td><td>Best — exact cell addressing.</td></tr>
+      <tr><td>PowerPoint <code>.pptx</code></td><td>Good — includes speaker notes.</td></tr>
+      <tr><td>PDF <code>.pdf</code></td><td>Least reliable — PDFs have no real tables, so table rules are approximate.</td></tr>
+      <tr><td>Old <code>.doc</code></td><td>Not readable. Open in Word and Save As <code>.docx</code>.</td></tr>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// =====================================================================
+// State. IDs are tracked separately from display names because the server
+// stores files under a sanitised stem ("Grant intake example") while the
+// name may contain punctuation ("Grant intake (example)").
+// =====================================================================
+let META={rule_types:[],supported:[],rulesets:[],templates:[],
+          methods_by_ext:{},rule_help:{}};
+let RULESET={name:"",fields:[]}, RULESET_ID="";
+let TEMPLATE={name:"",title:"",sections:[]}, TEMPLATE_ID="";
+let FILES=[];
+const PREVIEWS={};
+const NEW="__new__";
+
+const $=s=>document.querySelector(s);
+const el=(t,c,x)=>{const n=document.createElement(t);if(c)n.className=c;
+  if(x!==undefined)n.textContent=x;return n;};
+
+const PARAMS={
+  between:[["start","Start anchor"],["end","End anchor"]],
+  right_of:[["label","Label cell to find"]],
+  around_keywords:[["keyword","Word or phrase"],
+                   ["before","Extra paragraphs to include before"],
+                   ["after","Extra paragraphs to include after"]],
+  table_contains:[["contains","Table contains"]],
+  sheet_cell:[["sheet","Sheet name"],["cell","Cell or range"]],
+};
+const NICE={between:"Between",right_of:"Right of (table cell)",
+  around_keywords:"Around keywords",table_contains:"Table contains",
+  sheet_cell:"Sheet cell"};
+const PICKABLE={between:["start","end"],right_of:["label"],
+  around_keywords:["keyword"],table_contains:["contains"],sheet_cell:[]};
+
+const extOf=n=>{const i=(n||"").lastIndexOf(".");return i<0?"":n.slice(i).toLowerCase();};
+const methodsFor=name=>META.methods_by_ext[extOf(name)]||META.rule_types;
+
+// =====================================================================
+// Toasts. No "Done." prefix - the message already names the action.
+// =====================================================================
+function toast(msg,kind){
+  const t=el("div","toast"+(kind==="err"?" err":""),msg);
+  $("#toasts").append(t);
+  setTimeout(()=>{t.style.opacity="0";setTimeout(()=>t.remove(),320);},3200);
+}
+
+function confirmBox(title,text,onYes){
+  const c=el("div","confirm");
+  const b=el("div","box");
+  b.append(el("h3","",title),el("p","",text));
+  const f=el("div","f");
+  const no=el("button","btn ghost small","Cancel");no.onclick=()=>c.remove();
+  const yes=el("button","btn danger small","Delete");
+  yes.onclick=()=>{c.remove();onYes();};
+  f.append(no,yes);b.append(f);c.append(b);document.body.append(c);
+  c.onclick=e=>{if(e.target===c)c.remove();};
+}
+
+// =====================================================================
+// Tabs
+// =====================================================================
+function show(tab){
+  document.querySelectorAll(".tab").forEach(x=>
+    x.setAttribute("aria-selected",x.dataset.tab===tab));
+  ["extract","editor","help"].forEach(t=>
+    $("#tab-"+t).classList.toggle("hidden",t!==tab));
+  $("#wrap").classList.toggle("wide",tab==="editor");
+}
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{show(b.dataset.tab);
+  window.scrollTo(0,0);});
+$("#toeditor").onclick=()=>{show("editor");window.scrollTo(0,0);};
+
+// =====================================================================
+// Boot
+// =====================================================================
+async function boot(){
+  META=await (await fetch("/api/meta")).json();
+  $("#drophint").textContent=META.supported.join("  ·  ");
+  if(!META.has_samples)$("#samplebtn").classList.add("hidden");
+  // Default to "create new" for both, so a first-time user starts by building.
+  RULESET={name:"",fields:[]};RULESET_ID="";
+  TEMPLATE={name:"",title:"",sections:[]};TEMPLATE_ID="";
+  fillSelects();drawRules();drawSections();
+  await refreshFiles();
+}
+
+function fillSelects(){
+  const opts=list=>`<option value="${NEW}">+ Create new…</option>`
+    +list.map(o=>`<option value="${o.id}">${o.name}</option>`).join("");
+  $("#rs").innerHTML=opts(META.rulesets);
+  $("#tpl").innerHTML=opts(META.templates);
+  $("#rs").value=RULESET_ID||NEW;
+  $("#tpl").value=TEMPLATE_ID||NEW;
+}
+$("#rs").onchange=e=>{
+  if(e.target.value===NEW){RULESET={name:"",fields:[]};RULESET_ID="";
+    $("#rsname").value="";drawRules();drawSections();show("editor");window.scrollTo(0,0);}
+  else openRuleset(e.target.value);
+};
+$("#tpl").onchange=e=>{
+  if(e.target.value===NEW){TEMPLATE={name:"",title:"",sections:[]};TEMPLATE_ID="";
+    $("#tplname").value="";$("#tpltitle").value="";drawSections();
+    show("editor");window.scrollTo(0,0);}
+  else openTemplate(e.target.value);
+};
+
+// ---- combobox: type a name OR pick an existing one, in one control ----
+function comboList(kind){
+  const host=kind==="ruleset"?$("#rscombo"):$("#tplcombo");
+  host.querySelector(".combolist")?.remove();
+  const list=el("div","combolist");
+  const items=kind==="ruleset"?META.rulesets:META.templates;
+  items.forEach(o=>{
+    const d=el("div");
+    d.append(el("span","",o.name));
+    const del=el("span","del","🗑");
+    del.title="Delete this template";
+    del.onclick=ev=>{
+      ev.stopPropagation();list.remove();
+      confirmBox("Delete “"+o.name+"”?",
+        "This permanently removes the saved template from this computer.",
+        async()=>{
+          await fetch("/api/"+(kind==="ruleset"?"rulesets":"templates")+"/"+
+            encodeURIComponent(o.id),{method:"DELETE"});
+          const m=await (await fetch("/api/meta")).json();
+          META.rulesets=m.rulesets;META.templates=m.templates;
+          if(kind==="ruleset"&&RULESET_ID===o.id){RULESET={name:"",fields:[]};
+            RULESET_ID="";$("#rsname").value="";drawRules();}
+          if(kind==="template"&&TEMPLATE_ID===o.id){TEMPLATE={name:"",title:"",sections:[]};
+            TEMPLATE_ID="";$("#tplname").value="";$("#tpltitle").value="";}
+          drawSections();fillSelects();
+          toast("“"+o.name+"” deleted.");
+        });
+    };
+    d.append(del);
+    d.onclick=()=>{list.remove();
+      kind==="ruleset"?openRuleset(o.id):openTemplate(o.id);};
+    list.append(d);
+  });
+  const nw=el("div","new","+ Create new…");
+  nw.onclick=()=>{
+    list.remove();
+    if(kind==="ruleset"){RULESET={name:"",fields:[]};RULESET_ID="";
+      $("#rsname").value="";$("#rsname").focus();drawRules();}
+    else{TEMPLATE={name:"",title:"",sections:[]};TEMPLATE_ID="";
+      $("#tplname").value="";$("#tpltitle").value="";$("#tplname").focus();}
+    drawSections();fillSelects();
+  };
+  list.append(nw);
+  host.append(list);
+  // Close the list when clicking anywhere outside the combobox.
+  setTimeout(()=>{
+    document.addEventListener("click",function off(ev){
+      if(!host.contains(ev.target)){
+        list.remove();
+        document.removeEventListener("click",off);
+      }
+    });
+  },0);
+}
+$("#rscaret").onclick=()=>comboList("ruleset");
+$("#tplcaret").onclick=()=>comboList("template");
+$("#rsname").oninput=e=>RULESET.name=e.target.value;
+$("#tplname").oninput=e=>TEMPLATE.name=e.target.value;
+$("#tpltitle").oninput=e=>TEMPLATE.title=e.target.value;
+
+// The suffix shown in the title box follows the first chosen output format.
+function updateSuffix(){
+  const f=[...document.querySelectorAll("#formats input:checked")].map(c=>c.value);
+  $("#tplsfx").textContent="."+(f[0]||"docx");
+}
+document.querySelectorAll("#formats input").forEach(c=>c.onchange=updateSuffix);
+
+// =====================================================================
+// Files
+// =====================================================================
+const drop=$("#drop"),filein=$("#filein");
+drop.onclick=()=>filein.click();
+drop.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();filein.click();}};
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{
+  e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>{if(e.dataTransfer.files.length)upload(e.dataTransfer.files);});
+filein.onchange=()=>{if(filein.files.length)upload(filein.files);};
+
+async function upload(list){
+  const fd=new FormData();[...list].forEach(f=>fd.append("files",f));
+  try{
+    const d=await (await fetch("/api/upload",{method:"POST",body:fd})).json();
+    const added=d.files.length;
+    await refreshFiles();                       // library now includes them
+    const bad=d.files.filter(f=>!f.supported).length;
+    bad?toast(`${added} file(s) added, ${bad} can't be read.`,"err")
+       :toast(`${added} file(s) added.`);
+  }catch(err){toast("The files could not be added.","err");}
+}
+function setFiles(files,keepSelection){
+  FILES=files;
+  Object.keys(PREVIEWS).forEach(k=>delete PREVIEWS[k]);
+  renderFiles(keepSelection);drawRules();
+}
+async function refreshFiles(){
+  const d=await (await fetch("/api/uploaded")).json();
+  setFiles(d.files.map(f=>({label:f.label,supported:true,ext:extOf(f.label),size:0})));
+}
+$("#samplebtn").onclick=async()=>{
+  try{
+    await (await fetch("/api/samples",{method:"POST"})).json();
+    await refreshFiles();toast("Sample files added.");
+  }catch(err){toast("The sample files could not be loaded.","err");}
+};
+$("#clearbtn").onclick=()=>confirmBox("Clear all files?",
+  "Removes every uploaded file from the local library on this computer. "+
+  "Saved rulesets, output templates and past runs are kept.",
+  async()=>{
+    await fetch("/api/files/clear",{method:"POST"});
+    setFiles([]);toast("File library cleared.");
+  });
+
+/* The local library. A native <select multiple> is used deliberately: it gives
+   click-drag range selection and Ctrl/Shift selection for free, exactly as a
+   user expects, with no custom mouse handling to get wrong. */
+function renderFiles(keepSelection){
+  const sel=$("#filelib");
+  const previously=keepSelection?selectedLabels():null;
+  sel.innerHTML="";
+  FILES.forEach(f=>{
+    const o=el("option","",f.label+(f.supported?"":"   (not readable)"));
+    o.value=f.label;
+    o.disabled=!f.supported;
+    if(previously?previously.includes(f.label):true)o.selected=f.supported;
+    sel.append(o);
+  });
+  if(!FILES.length){
+    const o=el("option","","No files yet — drop some in above.");
+    o.disabled=true;sel.append(o);
+  }
+  updateSelCount();
+}
+
+function selectedLabels(){
+  return [...$("#filelib").selectedOptions].map(o=>o.value)
+    .filter(v=>FILES.some(f=>f.label===v));
+}
+function updateSelCount(){
+  const n=selectedLabels().length;
+  $("#selcount").textContent=FILES.length
+    ? `${n} of ${FILES.length} selected`:"";
+}
+$("#filelib").onchange=updateSelCount;
+$("#filelib").onmouseup=()=>setTimeout(updateSelCount,0);
+$("#selall").onclick=()=>{
+  [...$("#filelib").options].forEach(o=>{if(!o.disabled)o.selected=true;});
+  updateSelCount();
+};
+$("#delfile").onclick=async()=>{
+  const chosen=selectedLabels();
+  if(!chosen.length){toast("Select the files to remove first.","err");return;}
+  confirmBox(`Remove ${chosen.length} file(s)?`,
+    "This deletes them from the local library on this computer.",
+    async()=>{
+      for(const label of chosen){
+        await fetch("/api/files/"+encodeURIComponent(label),{method:"DELETE"});
+      }
+      await refreshFiles();
+      toast(`${chosen.length} file(s) removed.`);
+    });
+};
+
+// =====================================================================
+// Loose anchor matching, mirroring the Python side so the highlighting
+// shows exactly what the rules will match.
+// =====================================================================
+function loosePattern(a){
+  let out="";
+  for(const ch of a.trim()){
+    if(/\s/.test(ch)) out+="\\s+";
+    else if("-\u2010\u2011\u2012\u2013\u2014\u2015\u2212".includes(ch)) out+="[-\\u2010-\\u2015\\u2212]";
+    else if("\"\u201C\u201D".includes(ch)) out+="[\"\\u201C\\u201D]";
+    else if("'\u2018\u2019".includes(ch)) out+="['\\u2018\\u2019]";
+    else out+=ch.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  }
+  return out+"\\*?";
+}
+function highlight(text,anchors){
+  const esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  let marks=[];
+  anchors.forEach((a,i)=>{
+    if(!a.value)return;
+    let re;try{re=new RegExp(loosePattern(a.value),"ig");}catch(e){return;}
+    let m;
+    while((m=re.exec(text))!==null){
+      marks.push({s:m.index,e:m.index+m[0].length,c:"a"+((i%3)+1)});
+      if(m.index===re.lastIndex)re.lastIndex++;
+    }
+  });
+  if(!marks.length)return esc(text);
+  marks.sort((x,y)=>x.s-y.s);
+  const merged=[];
+  marks.forEach(m=>{if(!merged.length||m.s>=merged[merged.length-1].e)merged.push(m);});
+  let out="",pos=0;
+  merged.forEach(m=>{
+    out+=esc(text.slice(pos,m.s))+`<mark class="${m.c}">`+esc(text.slice(m.s,m.e))+"</mark>";
+    pos=m.e;});
+  return out+esc(text.slice(pos));
+}
+
+// =====================================================================
+// Rules editor
+// =====================================================================
+async function openRuleset(id){
+  try{
+    RULESET=await (await fetch("/api/rulesets/"+encodeURIComponent(id))).json();
+    RULESET_ID=id;
+    // migrate any legacy rule names saved by an older version
+    (RULESET.fields||[]).forEach(f=>{
+      if(f.type==="around_keyword")f.type="around_keywords";
+      if(f.type==="range")f.type="between";
+    });
+    $("#rsname").value=RULESET.name||"";
+    drawRules();drawSections();fillSelects();
+  }catch(err){toast("That ruleset could not be opened.","err");}
+}
+$("#addrule").onclick=()=>{
+  RULESET.fields.push({name:"",match:"",type:"",params:{},_open:true});
+  drawRules();};
+
+function drawRules(){
+  const host=$("#rulelist");if(!host)return;
+  host.innerHTML="";
+  RULESET.fields.forEach((f,i)=>host.append(ruleCard(f,i)));
+  if(!RULESET.fields.length)
+    host.append(el("div","muted","No fields yet — click “Add field” to start."));
+}
+
+function ruleCard(f,i){
+  const box=el("div","rule");
+  const head=el("div","head");
+  head.append(el("span","idx",String(i+1).padStart(2,"0")));
+  const nm=el("input");nm.type="text";nm.placeholder="Field name";
+  nm.value=f.name||"";nm.style.flex="1";
+  nm.oninput=e=>{f.name=e.target.value;drawSections();};
+  head.append(nm);
+  const rm=el("button","btn danger small","Remove");
+  rm.onclick=()=>{RULESET.fields.splice(i,1);drawRules();drawSections();};
+  head.append(rm);box.append(head);
+
+  // step 1 - file
+  const s1=el("div","step");
+  const l1=el("div","steplab");
+  l1.append(el("span","stepnum","1"),el("span","","Which file"));s1.append(l1);
+  const fs=el("select");
+  const ph=el("option","","Choose a file…");ph.value="";fs.append(ph);
+  FILES.forEach(x=>{const o=el("option","",x.label);o.value=x.label;
+    if(f.match===x.label)o.selected=true;fs.append(o);});
+  fs.onchange=e=>{
+    f.match=e.target.value;
+    if(f.type&&!methodsFor(f.match).includes(f.type)){f.type="";f.params={};}
+    f._open=true;drawRules();
+  };
+  s1.append(fs);
+  if(!FILES.length)s1.append(el("div","muted","Add files on the Extract tab first."));
+  box.append(s1);
+
+  const hasFile=!!f.match;
+
+  // step 2 - method, limited to what this file type supports
+  const s2=el("div","step"+(hasFile?"":" dim"));
+  const l2=el("div","steplab");
+  l2.append(el("span","stepnum","2"),el("span","","Extraction method"));
+  s2.append(l2);
+  const ts=el("select");
+  const tph=el("option","","Choose a method…");tph.value="";ts.append(tph);
+  (hasFile?methodsFor(f.match):[]).forEach(t=>{
+    const o=el("option","",NICE[t]||t);o.value=t;
+    if(t===f.type)o.selected=true;ts.append(o);});
+  ts.onchange=e=>{f.type=e.target.value;f.params={};drawRules();};
+  s2.append(ts);
+  // Describe the CHOSEN rule rather than restating the file-type filter.
+  if(f.type&&META.rule_help[f.type])
+    s2.append(el("div","rulehelp",META.rule_help[f.type]));
+  box.append(s2);
+
+  // step 3 - details + inline preview
+  if(hasFile&&f.type){
+    const s3=el("div","step");
+    const l3=el("div","steplab");
+    l3.append(el("span","stepnum","3"),el("span","","Details"));s3.append(l3);
+
+    const grid=el("div","pgrid");
+    const pick=PICKABLE[f.type]||[];
+    (PARAMS[f.type]||[]).forEach(([k,label])=>{
+      const d=el("div");
+      const lab=el("label","lab");
+      const ci=pick.indexOf(k);
+      if(ci>=0){const sw=el("span","swatch");
+        sw.style.background="var(--a"+((ci%3)+1)+")";lab.append(sw);}
+      lab.append(document.createTextNode(label));
+      d.append(lab);
+      const inp=el("input","mono");inp.type="text";
+      inp.value=f.params?.[k]??"";
+      if(k==="before"||k==="after")inp.placeholder="0";
+      inp.oninput=e=>{f.params=f.params||{};f.params[k]=e.target.value;
+        refreshPreview(f,box);};
+      d.append(inp);grid.append(d);
+    });
+    const d2=el("div");d2.append(el("label","lab","If not found, use"));
+    const di=el("input");di.type="text";di.value=f.default||"";
+    di.placeholder="leave blank to flag";
+    di.oninput=e=>{if(e.target.value)f.default=e.target.value;else delete f.default;};
+    d2.append(di);grid.append(d2);
+    s3.append(grid);
+
+    // Missing-anchor warning: advisory only, never blocks saving or running.
+    if(f.type==="between"){
+      const miss=[];
+      if(!(f.params||{}).start)miss.push("start anchor");
+      if(!(f.params||{}).end)miss.push("end anchor");
+      if(miss.length)
+        s3.append(el("div","warnline",
+          "No "+miss.join(" or ")+" set yet — this field may not find anything, "+
+          "but you can carry on and set it later."));
+    }
+
+    const pw=el("div","prevwrap"+(f._open===false?" closed":""));
+    const ph2=el("div","prevhead");
+    ph2.append(el("span","arrow","▾"),el("span","","Preview: "+f.match));
+    ph2.onclick=()=>{f._open=!(f._open!==false);pw.classList.toggle("closed");};
+    const pb=el("div","prevbody");
+    pb.append(el("div","muted","Loading preview…"));
+    pw.append(ph2,pb);s3.append(pw);
+    box.append(s3);
+    loadPreview(f,box);
+  }
+  return box;
+}
+
+async function loadPreview(f,box){
+  const body=box.querySelector(".prevbody");if(!body)return;
+  try{
+    if(!PREVIEWS[f.match]){
+      const r=await fetch("/api/preview?label="+encodeURIComponent(f.match));
+      if(!r.ok)throw new Error();
+      PREVIEWS[f.match]=await r.json();
+    }
+    renderPreview(f,box,PREVIEWS[f.match]);
+  }catch(err){
+    body.innerHTML="";body.append(el("div","muted","This file can't be previewed."));
+  }
+}
+function refreshPreview(f,box){
+  if(PREVIEWS[f.match])renderPreview(f,box,PREVIEWS[f.match]);
+}
+function renderPreview(f,box,data){
+  const body=box.querySelector(".prevbody");if(!body)return;
+  body.innerHTML="";
+  data.kind==="sheet"?renderSheet(f,body,data):renderDoc(f,body,data);
+}
+
+// ---- document preview ------------------------------------------------
+function renderDoc(f,body,data){
+  const keys=PICKABLE[f.type]||[];
+  const anchors=keys.map(k=>({key:k,value:(f.params||{})[k]||""}));
+  const tablesOnly=f.type==="right_of";
+
+  let selText="";
+  const prev=el("div","docprev"+(tablesOnly?" tablesonly":""));
+  data.blocks.forEach(b=>{
+    if(b.type==="paragraph"){
+      const isHead=(b.location||"").startsWith("§")&&
+        b.location.slice(1).trim()===b.text.trim();
+      const p=el("p",(isHead?"h":"")+(isHead&&!tablesOnly?" pickable":""));
+      p.innerHTML=highlight(b.text,anchors);
+      // One click takes the whole heading, no dragging required.
+      if(isHead&&!tablesOnly)p.onclick=()=>{
+        selText=b.text.trim();
+        shown.textContent=selText.length>50?selText.slice(0,50)+"…":selText;
+      };
+      prev.append(p);
+    }else{
+      const t=el("table");
+      b.rows.forEach(r=>{
+        const tr=el("tr");
+        r.forEach(c=>{
+          const td=el("td");td.innerHTML=highlight(c,anchors);
+          if(tablesOnly)td.onclick=()=>{
+            selText=c.trim();
+            shown.textContent=selText.length>50?selText.slice(0,50)+"…":selText;
+          };
+          tr.append(td);});
+        t.append(tr);});
+      prev.append(t);
+    }
+  });
+  body.append(prev);
+
+  const bar=el("div","pickbar");
+  const shown=el("span","selshow",
+    tablesOnly?"Click a label cell…":"Select text, or click a heading…");
+  bar.append(shown);
+  prev.addEventListener("mouseup",()=>{
+    const s=window.getSelection();
+    if(s&&s.toString().trim()&&prev.contains(s.anchorNode)){
+      selText=s.toString().trim();
+      shown.textContent=selText.length>50?selText.slice(0,50)+"…":selText;
+    }
+  });
+
+  keys.forEach(k=>{
+    const label=(PARAMS[f.type].find(p=>p[0]===k)||[k,k])[1];
+    const set=!!(f.params||{})[k];
+    // Clicking the button again UNSETS the anchor - no separate clear button.
+    const b=el("button","btn small setbtn"+(set?" on":""),
+      (set?"✓ ":"")+"Set as "+label.toLowerCase());
+    b.title=set?"Click again to unset":"";
+    b.onclick=()=>{
+      f.params=f.params||{};
+      if(set){delete f.params[k];drawRules();return;}
+      if(!selText){shown.textContent="Select something first.";return;}
+      f.params[k]=selText;drawRules();
+    };
+    bar.append(b);
+  });
+  body.append(bar);
+  if(tablesOnly)
+    body.append(el("div","muted",
+      "Only table cells are selectable — this method reads the cell to the "+
+      "right of the label."));
+}
+
+// ---- spreadsheet preview: click, or click-drag for a range ----------
+function renderSheet(f,body,data){
+  const p=f.params||{};
+  let active=Math.max(0,data.sheets.findIndex(s=>s.name===p.sheet));
+  const wrap=el("div","gridwrap"),tabs=el("div","sheettabs"),bar=el("div","pickbar");
+  const shown=el("span","selshow",p.cell?(p.sheet+"!"+p.cell):"Click a cell, or drag to select a range…");
+
+  data.sheets.forEach((s,i)=>{
+    const t=el("button","sheettab"+(i===active?" on":""),s.name);
+    t.onclick=()=>{active=i;
+      tabs.querySelectorAll(".sheettab").forEach((x,j)=>x.classList.toggle("on",j===i));
+      draw();};
+    tabs.append(t);
+  });
+  body.append(wrap,tabs,bar);
+
+  // Drag state for rectangular selection, mirroring how Excel behaves.
+  let dragging=false,anchorRC=null;
+  const colOf=ref=>ref.replace(/\d+/g,"");
+  const rowOf=ref=>parseInt(ref.replace(/\D+/g,""),10);
+  const colNum=letters=>letters.split("").reduce((a,c)=>a*26+(c.charCodeAt(0)-64),0);
+
+  function apply(a,b){
+    // Normalise so the range always reads top-left : bottom-right.
+    const r1=Math.min(a.r,b.r),r2=Math.max(a.r,b.r);
+    const c1=Math.min(a.c,b.c),c2=Math.max(a.c,b.c);
+    const ref=(r1===r2&&c1===c2)?a.ref
+      :(colLetters(c1)+r1+":"+colLetters(c2)+r2);
+    f.params=f.params||{};
+    f.params.sheet=data.sheets[active].name;f.params.cell=ref;
+    shown.textContent=f.params.sheet+"!"+ref;
+    const inputs=body.closest(".rule").querySelectorAll(".pgrid input.mono");
+    if(inputs[0])inputs[0].value=f.params.sheet;
+    if(inputs[1])inputs[1].value=ref;
+    paint();
+  }
+  function colLetters(n){let s="";while(n>0){const m=(n-1)%26;
+    s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;}
+
+  function paint(){
+    const cur=(f.params||{});
+    const inThisSheet=cur.sheet===data.sheets[active].name;
+    wrap.querySelectorAll("td").forEach(td=>{
+      td.classList.remove("inrange","anchorcell");
+      if(!inThisSheet||!cur.cell)return;
+      const ref=td.dataset.ref;if(!ref)return;
+      const [a,b]=cur.cell.includes(":")?cur.cell.split(":"):[cur.cell,cur.cell];
+      const r1=Math.min(rowOf(a),rowOf(b)),r2=Math.max(rowOf(a),rowOf(b));
+      const c1=Math.min(colNum(colOf(a)),colNum(colOf(b)));
+      const c2=Math.max(colNum(colOf(a)),colNum(colOf(b)));
+      const r=rowOf(ref),c=colNum(colOf(ref));
+      if(r>=r1&&r<=r2&&c>=c1&&c<=c2)td.classList.add("inrange");
+      if(ref===a)td.classList.add("anchorcell");
+    });
+  }
+
+  function draw(){
+    wrap.innerHTML="";
+    const s=data.sheets[active];
+    const t=el("table","grid");
+    const hr=el("tr");hr.append(el("th","",""));
+    (s.rows[0]||[]).forEach(c=>hr.append(el("th","",colOf(c.ref))));
+    t.append(hr);
+    s.rows.forEach((row,ri)=>{
+      const tr=el("tr");tr.append(el("th","",String(ri+1)));
+      row.forEach(cell=>{
+        const td=el("td","",cell.v);
+        td.dataset.ref=cell.ref;td.title=cell.ref;
+        const rc={r:rowOf(cell.ref),c:colNum(colOf(cell.ref)),ref:cell.ref};
+        td.onmousedown=e=>{e.preventDefault();dragging=true;anchorRC=rc;apply(rc,rc);};
+        td.onmouseover=()=>{if(dragging&&anchorRC)apply(anchorRC,rc);};
+        tr.append(td);
+      });
+      t.append(tr);
+    });
+    wrap.append(t);paint();
+  }
+  document.addEventListener("mouseup",()=>{dragging=false;});
+
+  bar.append(shown);
+  const cl=el("button","btn ghost small","Clear selection");
+  cl.onclick=()=>{delete f.params.sheet;delete f.params.cell;drawRules();};
+  bar.append(cl);
+  draw();
+}
+
+// ---- ruleset save / download / import -------------------------------
+$("#saverules").onclick=async()=>{
+  RULESET.name=$("#rsname").value.trim()||"Untitled";
+  try{
+    const clean=JSON.parse(JSON.stringify(RULESET));
+    (clean.fields||[]).forEach(f=>delete f._open);
+    const d=await (await fetch("/api/rulesets",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(clean)})).json();
+    META.rulesets=d.rulesets;RULESET_ID=d.id;fillSelects();
+    toast(`Ruleset “${RULESET.name}” saved.`);
+  }catch(err){toast("The ruleset could not be saved.","err");}
+};
+$("#dlrules").onclick=()=>{
+  if(!RULESET_ID){toast("Save the ruleset first.","err");return;}
+  window.location="/api/rulesets/"+encodeURIComponent(RULESET_ID)+"/file";
+  toast("Ruleset downloaded.");
+};
+$("#uprules").onclick=()=>$("#rsfile").click();
+$("#rsfile").onchange=e=>{importJson(e.target.files[0],"ruleset");e.target.value="";};
+$("#uptpl").onclick=()=>$("#tplfile").click();
+$("#tplfile").onchange=e=>{importJson(e.target.files[0],"template");e.target.value="";};
+
+async function importJson(file,kind){
+  if(!file)return;
+  try{
+    const data=JSON.parse(await file.text());
+    const r=await fetch("/api/import",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({kind,data})});
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    if(kind==="ruleset"){META.rulesets=d.rulesets;await openRuleset(d.id);}
+    else{META.templates=d.templates;await openTemplate(d.id);}
+    fillSelects();
+    toast((kind==="ruleset"?"Ruleset":"Output template")+" imported.");
+  }catch(err){
+    toast("That file isn't a saved "+(kind==="ruleset"?"ruleset":"template")+".","err");
+  }
+}
+
+// =====================================================================
+// Output template
+// =====================================================================
+async function openTemplate(id){
+  try{
+    TEMPLATE=await (await fetch("/api/templates/"+encodeURIComponent(id))).json();
+    TEMPLATE_ID=id;
+    $("#tplname").value=TEMPLATE.name||"";
+    $("#tpltitle").value=TEMPLATE.title||"";
+    drawSections();fillSelects();
+  }catch(err){toast("That template could not be opened.","err");}
+}
+$("#addheading").onclick=()=>{
+  TEMPLATE.sections.push({type:"heading",text:"New heading"});drawSections();};
+$("#addfield").onclick=()=>{
+  TEMPLATE.sections.push({type:"field",field:RULESET.fields[0]?.name||""});
+  drawSections();};
+
+let dragIdx=null;
+function drawSections(){
+  const host=$("#seclist");if(!host)return;
+  host.innerHTML="";
+  (TEMPLATE.sections||[]).forEach((s,i)=>{
+    const row=el("div","sec");
+    row.draggable=true;
+    row.ondragstart=()=>{dragIdx=i;row.classList.add("dragging");};
+    row.ondragend=()=>{row.classList.remove("dragging");
+      host.querySelectorAll(".sec").forEach(x=>x.classList.remove("over"));};
+    row.ondragover=e=>{e.preventDefault();row.classList.add("over");};
+    row.ondragleave=()=>row.classList.remove("over");
+    row.ondrop=e=>{
+      e.preventDefault();row.classList.remove("over");
+      if(dragIdx===null||dragIdx===i)return;
+      const moved=TEMPLATE.sections.splice(dragIdx,1)[0];
+      TEMPLATE.sections.splice(i,0,moved);dragIdx=null;drawSections();};
+    row.append(el("span","grip","⠿"));
+    if(s.type==="heading"){
+      const inp=el("input","h");inp.type="text";inp.value=s.text||"";
+      inp.oninput=e=>s.text=e.target.value;row.append(inp);
+    }else{
+      const pill=el("div","fieldpill");
+      const sel=el("select");
+      const names=RULESET.fields.map(f=>f.name).filter(Boolean);
+      if(s.field&&!names.includes(s.field))names.unshift(s.field);
+      if(!names.length)names.push("");
+      names.forEach(n=>{const o=el("option","",n||"(no fields yet)");o.value=n;
+        if(n===s.field)o.selected=true;sel.append(o);});
+      sel.onchange=e=>s.field=e.target.value;
+      pill.append(sel);row.append(pill);
+    }
+    const rm=el("button","btn danger small rm","Remove");
+    rm.onclick=()=>{TEMPLATE.sections.splice(i,1);drawSections();};
+    row.append(rm);host.append(row);
+  });
+  if(!(TEMPLATE.sections||[]).length)
+    host.append(el("div","muted","No sections yet — add a heading or a field."));
+}
+
+$("#savetpl").onclick=async()=>{
+  TEMPLATE.name=$("#tplname").value.trim()||"Untitled";
+  TEMPLATE.title=$("#tpltitle").value.trim()||TEMPLATE.name;
+  try{
+    const d=await (await fetch("/api/templates",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(TEMPLATE)})).json();
+    META.templates=d.templates;TEMPLATE_ID=d.id;fillSelects();
+    toast(`Output template “${TEMPLATE.name}” saved.`);
+  }catch(err){toast("The template could not be saved.","err");}
+};
+$("#dltpl").onclick=()=>{
+  if(!TEMPLATE_ID){toast("Save the template first.","err");return;}
+  window.location="/api/templates/"+encodeURIComponent(TEMPLATE_ID)+"/file";
+  toast("Output template downloaded.");
+};
+
+// =====================================================================
+// Run, with a live progress bar fed by the streaming endpoint
+// =====================================================================
+$("#runbtn").onclick=async()=>{
+  const formats=[...document.querySelectorAll("#formats input:checked")].map(c=>c.value);
+  if(!formats.length){toast("Choose at least one output format.","err");return;}
+  if($("#rs").value===NEW||$("#tpl").value===NEW){
+    toast("Create and save a ruleset and an output template first.","err");return;}
+  if(!selectedLabels().length){
+    toast("Select at least one file to extract from.","err");return;}
+  $("#runbtn").disabled=true;
+  $("#progwrap").classList.remove("hidden");
+  $("#progfill").style.width="4%";$("#proglog").textContent="Starting…";
+  const lines=[];
+  try{
+    const r=await fetch("/api/run/stream",{method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ruleset:$("#rs").value,template:$("#tpl").value,
+                           formats,files:selectedLabels()})});
+    if(!r.ok){const e=await r.json();throw new Error(e.detail||"Extraction failed.");}
+
+    // Read newline-delimited JSON as it arrives.
+    const reader=r.body.getReader(),dec=new TextDecoder();
+    let buf="",result=null;
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      let nl;
+      while((nl=buf.indexOf("\n"))>=0){
+        const line=buf.slice(0,nl).trim();buf=buf.slice(nl+1);
+        if(!line)continue;
+        const msg=JSON.parse(line);
+        if(msg.log!==undefined){
+          lines.push(msg.log);
+          $("#proglog").textContent=msg.log;
+          $("#progfill").style.width=(msg.pct||5)+"%";
+        }else if(msg.result){result=msg.result;}
+        else if(msg.error){throw new Error(msg.error);}
+      }
+    }
+    if(!result)throw new Error("No result was returned.");
+    $("#progfill").style.width="100%";
+    $("#proglog").textContent="Finished.";
+    result.log=lines;
+    renderResult(result);autoDownload(result.outputs);
+    toast(`Extracted ${result.fields.length} field(s)`+
+      (result.missing.length?`, ${result.missing.length} need checking.`:"."),
+      result.missing.length?"err":undefined);
+  }catch(err){
+    $("#progfill").style.width="0";
+    $("#proglog").textContent="";
+    toast(err.message||"Extraction failed.","err");
+  }finally{
+    $("#runbtn").disabled=false;
+    setTimeout(()=>$("#progwrap").classList.add("hidden"),1600);
+  }
+};
+
+function autoDownload(outputs){
+  outputs.forEach((o,i)=>setTimeout(()=>{
+    const a=document.createElement("a");
+    a.href="/api/download/"+o.format;a.download=o.name;
+    document.body.append(a);a.click();a.remove();},i*700));
+}
+
+function renderResult(d){
+  $("#resultpanel").classList.remove("hidden");
+  $("#log").textContent=(d.log||[]).join("\n");
+  const co=$("#callouts");co.innerHTML="";
+  if(d.missing.length){
+    const c=el("div","callout err");c.append(el("h3","","Check these by hand"));
+    const ul=el("ul");
+    d.missing.forEach(m=>ul.append(el("li","",m+" — not found in the files")));
+    c.append(ul);co.append(c);
+  }
+  if(d.warnings.length){
+    const c=el("div","callout");c.append(el("h3","","File warnings"));
+    const ul=el("ul");d.warnings.forEach(w=>ul.append(el("li","",w)));
+    c.append(ul);co.append(c);
+  }
+  const tb=$("#resbody");tb.innerHTML="";
+  d.fields.forEach(f=>{
+    const tr=el("tr",f.found?"":"miss");
+    const td1=el("td");td1.append(el("span","dot"+(f.found?"":" no")));
+    td1.append(el("span","",f.name));tr.append(td1);
+    const td2=el("td");td2.textContent=f.found?f.preview:(f.note||"Not found");
+    tr.append(td2);tr.append(el("td","cite",f.citation));tb.append(tr);
+  });
+  const dl=$("#dl");dl.innerHTML="";
+  d.outputs.forEach(o=>{
+    const a=el("a","btn small","Download again ."+o.format);
+    a.href="/api/download/"+o.format;a.style.marginLeft="6px";
+    a.style.textDecoration="none";dl.append(a);
+  });
+}
+
+// =====================================================================
+// Guided tour
+// =====================================================================
+const TOUR=[
+  {tab:"extract",sel:"#p-files",title:"1 · Add your files",
+   text:"Drop in the documents you want to pull information from — Word, Excel, PDF or PowerPoint. Nothing is uploaded anywhere; the files stay on this computer. “Use sample files” loads a harmless demo set if you just want to try it."},
+  {tab:"extract",sel:"#p-choose",title:"2 · Pick a ruleset and layout",
+   text:"A ruleset says WHAT to extract. An output template says HOW the summary is laid out. If you haven't made them yet, choose “Create new” and you'll be taken to the editor."},
+  {tab:"editor",sel:"#p-rsmeta",title:"The ruleset",
+   text:"Type a name, or click the arrow to open, delete or create one. Save it, and download it to share with another computer."},
+  {tab:"editor",sel:"#addrule",title:"Add a field",
+   text:"Each field is one piece of information you want out of a document — a title, a cell, a whole section."},
+  {tab:"editor",sel:"#rulelist",
+   // With no fields yet there is nothing in the list to highlight, so point at
+   // the button that creates one instead.
+   dyn:()=>RULESET.fields.length?"#rulelist":"#addrule",
+   title:"Build the field in three steps",
+   text:"Choose the file, then the extraction method (only the ones that work on that file type are offered), then the details. A preview appears underneath — select text and click “Set as…” to fill an anchor. Click the same button again to unset it."},
+  {tab:"editor",sel:"#p-sections",title:"Lay out the summary",
+   text:"Add headings and fields, and drag them into the order you want. This mirrors the finished document."},
+  {tab:"extract",sel:"#p-run",title:"3 · Extract",
+   text:"Choose your output file type. The files download automatically, and the results table shows what was found and where it came from — anything missing is flagged in red."},
+];
+let tourAt=-1;
+function ensureTour(){
+  if(!$("#tourveil")){
+    const v=el("div");v.id="tourveil";
+    const h=el("div");h.id="tourhole";v.append(h);document.body.append(v);
+    const b=el("div");b.id="tourbox";document.body.append(b);
+  }
+}
+function startTour(){tourAt=-1;ensureTour();nextTour();}
+function endTour(){$("#tourveil")?.remove();$("#tourbox")?.remove();}
+function nextTour(){
+  tourAt++;
+  if(tourAt>=TOUR.length){endTour();toast("Tour finished.");return;}
+  const step=TOUR[tourAt];
+  show(step.tab);
+  const target=$(step.dyn?step.dyn():step.sel);
+  if(!target){nextTour();return;}
+  target.scrollIntoView({block:"center",behavior:"smooth"});
+  // Wait for the smooth scroll to settle before measuring, otherwise the
+  // spotlight lands where the element USED to be.
+  setTimeout(()=>{
+    const r=target.getBoundingClientRect();
+    const veil=$("#tourveil"),hole=$("#tourhole");
+    if(!veil)return;
+    veil.style.height=document.body.scrollHeight+"px";
+    hole.style.left=(r.left+window.scrollX-6)+"px";
+    hole.style.top=(r.top+window.scrollY-6)+"px";
+    hole.style.width=(r.width+12)+"px";
+    hole.style.height=(r.height+12)+"px";
+
+    const box=$("#tourbox");box.innerHTML="";
+    box.append(el("h3","",step.title),el("p","",step.text));
+    const tf=el("div","tf");
+    tf.append(el("span","step",`${tourAt+1} of ${TOUR.length}`));
+    const skip=el("button","btn ghost small","Skip");skip.onclick=endTour;
+    const back=el("button","btn ghost small","‹");
+    back.title="Back";back.disabled=tourAt===0;
+    back.onclick=()=>{tourAt-=2;nextTour();};
+    const next=el("button","btn small",tourAt===TOUR.length-1?"Finish":"Next");
+    next.onclick=nextTour;
+    tf.append(skip,back,next);box.append(tf);
+
+    // Place beside the target, then clamp hard to the viewport so the box can
+    // never end up off screen (which happened with tall targets).
+    const bw=320,bh=box.offsetHeight||200,gap=16,pad=12;
+    let left=r.right+gap, top=r.top;
+    if(left+bw+pad>window.innerWidth)left=r.left-bw-gap;      // flip to the left
+    if(left<pad){                                             // no room: go below
+      left=Math.max(pad,Math.min(r.left,window.innerWidth-bw-pad));
+      top=r.bottom+gap;
+      if(top+bh+pad>window.innerHeight)top=r.top-bh-gap;      // or above
+    }
+    top=Math.max(pad,Math.min(top,window.innerHeight-bh-pad));
+    left=Math.max(pad,Math.min(left,window.innerWidth-bw-pad));
+    box.style.top=top+"px";box.style.left=left+"px";
+  },340);
+}
+$("#tourbtn").onclick=startTour;
+$("#tourbtn2").onclick=startTour;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")endTour();});
+
+updateSuffix();
+boot();
+</script>
+</body>
+</html>

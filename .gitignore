@@ -1,0 +1,35 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- PyInstaller build artefacts ----
+build/
+dist/
+*.manifest
+# NOTE: docuwizard.spec is intentionally NOT ignored - it is the build recipe
+# and must be committed.
+
+# ---- DocuWizard runtime data ----
+# Everything below is generated on the user's machine and may contain content
+# extracted from real documents. It must never be committed.
+workspace/uploads/
+workspace/runs/
+
+# Saved rulesets and output templates ARE tracked, since they contain rules
+# rather than document content. The two bundled examples are committed; if you
+# do not want personal ones in the repo, uncomment these:
+# workspace/rulesets/
+# workspace/templates/
+
+# ---- OS / editor noise ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+~$*

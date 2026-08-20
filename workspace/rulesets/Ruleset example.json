@@ -1,0 +1,75 @@
+{
+  "name": "Grant intake (example)",
+  "description": "The original eight-field grant intake, as a worked example.",
+  "fields": [
+    {
+      "name": "Project Title",
+      "type": "between",
+      "match": "application",
+      "params": {
+        "start": "Project Title:",
+        "end": "Proposal Number:"
+      }
+    },
+    {
+      "name": "Recipient Organization",
+      "type": "right_of",
+      "match": "application",
+      "params": {
+        "label": "Organization – legal name: (“The Applicant”)"
+      }
+    },
+    {
+      "name": "Project Summary",
+      "type": "right_of",
+      "match": "application",
+      "params": {
+        "label": "Project Summary"
+      }
+    },
+    {
+      "name": "Recipient Total Project Costs ($)",
+      "type": "right_of",
+      "match": "application",
+      "params": {
+        "label": "Total Project Cost (including ineligible and In-Kind)"
+      }
+    },
+    {
+      "name": "Project Team",
+      "type": "range",
+      "match": "application",
+      "params": {
+        "start": "B.4 Project Team",
+        "end": "B.5 Project Budget Information"
+      }
+    },
+    {
+      "name": "Recommended Funding ($)",
+      "type": "sheet_cell",
+      "match": "budget",
+      "params": {
+        "sheet": "Budget Summary",
+        "cell": "P10"
+      }
+    },
+    {
+      "name": "Other Collaborators",
+      "type": "range",
+      "match": "agreement",
+      "default": "N/A",
+      "params": {
+        "start": "Other Recognized Project Collaborators",
+        "end": "A.3 Activities & Milestones (Project Schedule)"
+      }
+    },
+    {
+      "name": "CHEESEMAKER Collaborative Value",
+      "type": "table_contains",
+      "match": "agreement",
+      "params": {
+        "contains": "Total CHEESEMAKER Collaborative Value ($)"
+      }
+    }
+  ]
+}

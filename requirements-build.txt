@@ -1,0 +1,4 @@
+# Extra tooling needed ONLY to build the standalone executable.
+# Install alongside requirements.txt, then run:  pyinstaller docuwizard.spec
+-r requirements.txt
+pyinstaller>=6.0
